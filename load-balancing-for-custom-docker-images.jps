@@ -1,0 +1,57 @@
+{
+    "jpsType": "install",
+    "jpsVersion": "0.99",
+    "name": "Load Balancing Example",
+    "description": "Example how to enable automatic load balancing configuration updates for custom Docker images",
+    "nodes": [{
+        "nodeGroup": "bl",
+        "count": 1,
+        "cloudlets": 16,
+        "displayName": "Balancer",
+        "image": "jelastic/nginxbalancer"
+    }, {
+        "nodeGroup": "cp",
+        "count": 2,
+        "cloudlets": 16,
+        "image": "jelastic/nginxphp",
+        "displayName": "App Server"
+    }],
+    "onInstall": [{
+            "forEach(nodes.cp)": {
+                "update": {
+                    "act": "add",
+                    "ip": "${@i.address}"
+                }
+            }
+        },
+        "rebuild"
+    ],
+    "onAfterServiceScaleOut[cp]": [{
+            "forEach(event.response.nodes)": {
+                "update": {
+                    "act": "add",
+                    "ip": "${@i.address}"
+                }
+            }
+        },
+        "rebuild"
+    ],
+    "onBeforeScaleIn[cp]": [{
+            "forEach(event.response.nodes)": {
+                "update": {
+                    "act": "remove",
+                    "ip": "${@i.address}"
+                }
+            }
+        },
+        "rebuild"
+    ],
+    "actions": {
+        "update": {
+            "cmd[bl]": "jem balancer ${this.act}CommonHost -h ${this.ip}"
+        },
+        "rebuild": {
+            "cmd[bl]": "jem balancer rebuildCommon"
+        }
+    }
+}
