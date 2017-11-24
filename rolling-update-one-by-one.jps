@@ -1,0 +1,31 @@
+{
+    "jpsType": "update",
+    "jpsVersion": "0.99",
+    "name": "Rolling Update",
+    "description": "Example how to update tomcat servers one by one",
+    "onInstall": [{
+        "forEach(nodes.cp)": {
+            "update": {
+                "id": "${@i.id}",
+                "ip": "${@i.address}"
+            }
+        }
+    }],
+    "actions": {
+        "update": [{
+            "cmd[bl]": "jem balancer removeCommonHost -h ${this.ip} && jem balancer rebuildCommon",
+            "user": "root"
+        }, {
+            "cmd[${this.id}]": [
+                "echo \"---> execute update $(date)\" >> /var/log/run.log",
+                "echo 'do something here' >> /var/log/run.log",
+                "sudo service tomcat restart",
+                "sleep 10",
+                "echo 'check the status' >> /var/log/run.log"
+            ]
+        }, {
+            "cmd[bl]": "jem balancer addCommonHost -h ${this.ip} && jem balancer rebuildCommon",
+            "user": "root"
+        }]
+    }
+}
